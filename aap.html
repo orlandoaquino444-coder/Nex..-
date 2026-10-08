@@ -1,0 +1,3345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#5D4E37">
+    <meta name="description" content="Encuentra negocios locales cerca de ti">
+    <title>Mi Red - Negocios Locales</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <!-- Cloudinary Upload Widget -->
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    
+    <!-- PayPal SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=BAAYZpBLJ9fbuQUCcu6jVt16M0wI1z_6617fcuSctj-ldj2w_GSKADzzj7SDA444honMPWjAG8eTiliRRc&currency=USD&locale=es_ES"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #5D4E37;
+            --primary-dark: #3E3425;
+            --primary-light: #8B7355;
+            --secondary: #D4C4B0;
+            --accent: #C9A962;
+            --bg: #FAF8F5;
+            --surface: #FFFFFF;
+            --text: #2C2C2C;
+            --text-light: #6B6B6B;
+            --border: #E5E0D8;
+            --error: #D32F2F;
+            --success: #388E3C;
+            --warning: #F57C00;
+            --shadow: rgba(93, 78, 55, 0.1);
+            --shadow-lg: rgba(93, 78, 55, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Utilidades */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--text);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text);
+            font-size: 0.875rem;
+        }
+
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: var(--surface);
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--shadow);
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px var(--shadow);
+            margin-bottom: 1rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--secondary);
+            color: var(--text);
+        }
+
+        .badge-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .badge-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .badge-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        /* Navegación */
+        .navbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .navbar-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .navbar-brand i {
+            font-size: 1.5rem;
+        }
+
+        .navbar-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .navbar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: var(--bg);
+            color: var(--primary);
+        }
+
+        .user-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+        }
+
+        /* Layout principal */
+        .main-content {
+            min-height: calc(100vh - 70px);
+            padding: 2rem 0;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+            border-radius: 0 0 2rem 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .search-box {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            gap: 0.5rem;
+            background: white;
+            border-radius: 1rem;
+            padding: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-box button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: var(--accent);
+            color: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .search-box button:hover {
+            background: var(--primary-light);
+        }
+
+        /* Grid de negocios */
+        .business-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .business-card {
+            background: var(--surface);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 2px 8px var(--shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .business-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px var(--shadow-lg);
+        }
+
+        .business-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: var(--secondary);
+        }
+
+        .business-info {
+            padding: 1.25rem;
+        }
+
+        .business-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .business-category {
+            color: var(--primary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+
+        .business-location {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .business-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stars {
+            color: var(--accent);
+        }
+
+        .rating-text {
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        /* Filtros */
+        .filters {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--text);
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        /* Autenticación */
+        .auth-container {
+            max-width: 450px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .auth-card {
+            background: var(--surface);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 4px 16px var(--shadow-lg);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-header h2 {
+            font-size: 1.75rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            color: var(--text-light);
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-light);
+        }
+
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* Perfil */
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+            border-radius: 0 0 2rem 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid white;
+            object-fit: cover;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .profile-name {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-username {
+            opacity: 0.9;
+            font-size: 1.125rem;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        /* Detalle de negocio */
+        .business-detail-header {
+            position: relative;
+            height: 300px;
+            background: var(--secondary);
+            border-radius: 0 0 2rem 2rem;
+            overflow: hidden;
+        }
+
+        .business-detail-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .business-detail-content {
+            padding: 2rem 0;
+        }
+
+        .business-detail-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .business-detail-section {
+            margin-bottom: 2rem;
+        }
+
+        .business-detail-section h3 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .action-btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .action-btn-secondary {
+            background: var(--secondary);
+            color: var(--text);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-lg);
+        }
+
+        /* Galería */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Reseñas */
+        .review-card {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .review-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .review-avatar {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .review-author {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .review-date {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .review-text {
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Panel de control */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .dashboard-card {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .dashboard-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .stat-card-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-card-label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        /* Formularios */
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Alertas */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alert-success {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-error {
+            background: #FFEBEE;
+            color: #C62828;
+            border-left: 4px solid var(--error);
+        }
+
+        .alert-warning {
+            background: #FFF3E0;
+            color: #EF6C00;
+            border-left: 4px solid var(--warning);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: 1.5rem;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-light);
+            cursor: pointer;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--primary-dark);
+            color: white;
+            padding: 3rem 0 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-section p,
+        .footer-section a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            line-height: 2;
+        }
+
+        .footer-section a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (min-width: 640px) {
+            .business-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .form-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .gallery {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .business-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .navbar-toggle {
+                display: none;
+            }
+
+            .navbar-menu {
+                display: flex;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .footer-content {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 639px) {
+            .navbar-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--surface);
+                flex-direction: column;
+                padding: 1rem;
+                border-bottom: 1px solid var(--border);
+                box-shadow: 0 4px 12px var(--shadow);
+            }
+
+            .navbar-menu.active {
+                display: flex;
+            }
+
+            .hero h1 {
+                font-size: 1.5rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-stats {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Utilidades adicionales */
+        .text-center { text-align: center; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .hidden { display: none !important; }
+        .text-primary { color: var(--primary); }
+        .text-success { color: var(--success); }
+        .text-error { color: var(--error); }
+        .bg-primary { background: var(--primary); }
+        .bg-secondary { background: var(--secondary); }
+        .p-1 { padding: 0.5rem; }
+        .p-2 { padding: 1rem; }
+        .p-3 { padding: 1.5rem; }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Animaciones */
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        /* Badge de estado */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-active {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .status-active::before {
+            background: var(--success);
+        }
+
+        .status-inactive {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .status-inactive::before {
+            background: var(--error);
+        }
+
+        .status-pending {
+            background: #FFF3E0;
+            color: #EF6C00;
+        }
+
+        .status-pending::before {
+            background: var(--warning);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navegación -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="#" class="navbar-brand" onclick="app.navigate('home')">
+                <i class="fas fa-store"></i>
+                <span>Mi Red</span>
+            </a>
+            
+            <button class="navbar-toggle" onclick="app.toggleMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="#" class="nav-link" onclick="app.navigate('home')">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a href="#" class="nav-link hidden" id="navBusinesses" onclick="app.navigate('businesses')">
+                    <i class="fas fa-search"></i>
+                    <span>Explorar</span>
+                </a>
+                <a href="#" class="nav-link hidden" id="navDashboard" onclick="app.navigate('dashboard')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Mi Negocio</span>
+                </a>
+                <a href="#" class="nav-link hidden" id="navProfile" onclick="app.navigate('profile')">
+                    <i class="fas fa-user"></i>
+                    <span>Perfil</span>
+                </a>
+                <a href="#" class="nav-link hidden" id="navAdmin" onclick="app.navigate('admin')">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Admin</span>
+                </a>
+                <a href="#" class="nav-link hidden" id="navLogin" onclick="app.navigate('login')">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Iniciar Sesión</span>
+                </a>
+                <a href="#" class="nav-link hidden" id="navLogout" onclick="app.logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        
+        <!-- Página: Home -->
+        <div id="page-home" class="page active">
+            <div class="hero">
+                <div class="container">
+                    <h1>Encuentra Negocios Locales</h1>
+                    <p>Descubre los mejores negocios cerca de ti. Desde restaurantes hasta servicios profesionales.</p>
+                    <div class="search-box">
+                        <input type="text" id="homeSearchInput" placeholder="¿Qué estás buscando?" onkeypress="if(event.key==='Enter')app.searchFromHome()">
+                        <button onclick="app.searchFromHome()">
+                            <i class="fas fa-search"></i>
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="container">
+                <h2 style="margin-bottom: 1rem; color: var(--primary);">Categorías Populares</h2>
+                <div class="business-grid" id="homeCategories">
+                    <!-- Se llena dinámicamente -->
+                </div>
+                
+                <div class="mt-3">
+                    <h2 style="margin-bottom: 1rem; color: var(--primary);">Negocios Destacados</h2>
+                    <div class="business-grid" id="homeFeatured">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página: Explorar/Búsqueda -->
+        <div id="page-businesses" class="page">
+            <div class="container">
+                <h1 style="margin-bottom: 1.5rem; color: var(--primary);">Explorar Negocios</h1>
+                
+                <div class="filters">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label><i class="fas fa-search"></i> Buscar</label>
+                            <input type="text" id="filterSearch" placeholder="Nombre, servicio...">
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-category"></i> Categoría</label>
+                            <select id="filterCategory">
+                                <option value="">Todas</option>
+                                <option value="restaurante">Restaurante</option>
+                                <option value="tienda">Tienda</option>
+                                <option value="servicio">Servicio</option>
+                                <option value="salud">Salud</option>
+                                <option value="entretenimiento">Entretenimiento</option>
+                                <option value="otros">Otros</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-sort"></i> Ordenar</label>
+                            <select id="filterSort">
+                                <option value="distance">Más cercanos</option>
+                                <option value="rating">Mejor valorados</option>
+                                <option value="popular">Más populares</option>
+                                <option value="new">Más nuevos</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary" onclick="app.applyFilters()">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="business-grid" id="businessesList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página: Detalle de Negocio -->
+        <div id="page-business-detail" class="page">
+            <div id="businessDetailContent">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página: Login -->
+        <div id="page-login" class="page">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <h2>Bienvenido de vuelta</h2>
+                        <p>Inicia sesión para continuar</p>
+                    </div>
+                    
+                    <div id="loginAlert"></div>
+                    
+                    <form id="loginForm" onsubmit="app.handleLogin(event)">
+                        <div class="input-group">
+                            <label><i class="fas fa-envelope"></i> Correo electrónico</label>
+                            <input type="email" id="loginEmail" required placeholder="tu@email.com">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label><i class="fas fa-lock"></i> Contraseña</label>
+                            <input type="password" id="loginPassword" required placeholder="••••••••">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                        </button>
+                    </form>
+                    
+                    <div class="auth-divider">o</div>
+                    
+                    <button class="btn btn-secondary" onclick="app.navigate('register')">
+                        <i class="fas fa-user-plus"></i> Crear cuenta
+                    </button>
+                    
+                    <div class="auth-footer">
+                        <a href="#" onclick="app.navigate('recover')">¿Olvidaste tu contraseña?</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página: Registro -->
+        <div id="page-register" class="page">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <h2>Crear cuenta</h2>
+                        <p>Únete a nuestra comunidad</p>
+                    </div>
+                    
+                    <div id="registerAlert"></div>
+                    
+                    <form id="registerForm" onsubmit="app.handleRegister(event)">
+                        <div class="input-group">
+                            <label><i class="fas fa-user"></i> Nombre de usuario</label>
+                            <input type="text" id="registerUsername" required placeholder="Tu nombre público">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label><i class="fas fa-envelope"></i> Correo electrónico</label>
+                            <input type="email" id="registerEmail" required placeholder="tu@email.com">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label><i class="fas fa-lock"></i> Contraseña</label>
+                            <input type="password" id="registerPassword" required placeholder="Mínimo 6 caracteres" minlength="6">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label><i class="fas fa-lock"></i> Confirmar contraseña</label>
+                            <input type="password" id="registerPasswordConfirm" required placeholder="Repite tu contraseña">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Registrarse
+                        </button>
+                    </form>
+                    
+                    <div class="auth-divider">o</div>
+                    
+                    <button class="btn btn-secondary" onclick="app.navigate('login')">
+                        <i class="fas fa-sign-in-alt"></i> Ya tengo cuenta
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página: Recuperar contraseña -->
+        <div id="page-recover" class="page">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <h2>Recuperar contraseña</h2>
+                        <p>Te enviaremos un enlace para restablecerla</p>
+                    </div>
+                    
+                    <div id="recoverAlert"></div>
+                    
+                    <form id="recoverForm" onsubmit="app.handleRecover(event)">
+                        <div class="input-group">
+                            <label><i class="fas fa-envelope"></i> Correo electrónico</label>
+                            <input type="email" id="recoverEmail" required placeholder="tu@email.com">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Enviar enlace
+                        </button>
+                    </form>
+                    
+                    <div class="auth-footer">
+                        <a href="#" onclick="app.navigate('login')">Volver al inicio de sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página: Perfil -->
+        <div id="page-profile" class="page">
+            <div class="profile-header">
+                <div class="container">
+                    <img src="" alt="Avatar" class="profile-avatar" id="profileAvatar">
+                    <h1 class="profile-name" id="profileName">Cargando...</h1>
+                    <p class="profile-username" id="profileUsername">@usuario</p>
+                    
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statFavorites">0</div>
+                            <div class="stat-label">Favoritos</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statReviews">0</div>
+                            <div class="stat-label">Reseñas</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statBusinesses">0</div>
+                            <div class="stat-label">Negocios</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="container">
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Información de la cuenta</h3>
+                    
+                    <div class="input-group">
+                        <label>ID de usuario</label>
+                        <input type="text" id="profileUserId" readonly>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Correo electrónico</label>
+                        <input type="email" id="profileEmail" readonly>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Fecha de registro</label>
+                        <input type="text" id="profileCreatedAt" readonly>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="app.showEditProfileModal()">
+                        <i class="fas fa-edit"></i> Editar perfil
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Mis favoritos</h3>
+                    <div id="profileFavorites">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página: Dashboard (Propietario) -->
+        <div id="page-dashboard" class="page">
+            <div class="container">
+                <h1 style="margin-bottom: 1.5rem; color: var(--primary);">Panel de Control</h1>
+                
+                <div id="dashboardAlert"></div>
+                
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <h3 class="dashboard-card-title">Estado del Plan</h3>
+                            <span class="status-badge status-active" id="planStatus">Activo</span>
+                        </div>
+                        <p id="planInfo">Tu plan está activo hasta el <strong id="planExpiry">--</strong></p>
+                        <button class="btn btn-primary mt-2" onclick="app.showPaymentModal()" id="btnRenew">
+                            <i class="fas fa-credit-card"></i> Renovar
+                        </button>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <h3 class="dashboard-card-title">Estadísticas</h3>
+                        </div>
+                        <div class="dashboard-stats">
+                            <div class="stat-card">
+                                <div class="stat-card-icon"><i class="fas fa-eye"></i></div>
+                                <div class="stat-card-value" id="statViews">0</div>
+                                <div class="stat-card-label">Visitas</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-icon"><i class="fas fa-star"></i></div>
+                                <div class="stat-card-value" id="statRating">0</div>
+                                <div class="stat-card-label">Calificación</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-icon"><i class="fas fa-comment"></i></div>
+                                <div class="stat-card-value" id="statReviewsCount">0</div>
+                                <div class="stat-card-label">Reseñas</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-icon"><i class="fas fa-heart"></i></div>
+                                <div class="stat-card-value" id="statFavoritesCount">0</div>
+                                <div class="stat-card-label">Favoritos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="dashboard-card-header">
+                        <h3 class="dashboard-card-title">Mi Negocio</h3>
+                        <button class="btn btn-primary" onclick="app.showBusinessForm()" id="btnCreateBusiness">
+                            <i class="fas fa-plus"></i> Crear negocio
+                        </button>
+                    </div>
+                    <div id="dashboardBusinessList">
+                        <p class="text-center" style="color: var(--text-light);">Cargando...</p>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="dashboard-card-header">
+                        <h3 class="dashboard-card-title">Publicaciones</h3>
+                        <button class="btn btn-primary" onclick="app.showPostForm()">
+                            <i class="fas fa-plus"></i> Nueva publicación
+                        </button>
+                    </div>
+                    <div id="dashboardPostsList">
+                        <p class="text-center" style="color: var(--text-light);">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página: Admin -->
+        <div id="page-admin" class="page">
+            <div class="container">
+                <h1 style="margin-bottom: 1.5rem; color: var(--primary);">Panel de Administración</h1>
+                
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3 class="dashboard-card-title">Usuarios</h3>
+                        <div id="adminUsersList">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h3 class="dashboard-card-title">Negocios</h3>
+                        <div id="adminBusinessesList">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h3 class="dashboard-card-title">Reportes</h3>
+                        <div id="adminReportsList">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Mi Red</h3>
+                    <p>La mejor plataforma para encontrar y promocionar negocios locales.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Enlaces</h3>
+                    <p><a href="#" onclick="app.navigate('home')">Inicio</a></p>
+                    <p><a href="#" onclick="app.navigate('businesses')">Explorar</a></p>
+                    <p><a href="#" onclick="app.navigate('login')">Iniciar Sesión</a></p>
+                </div>
+                <div class="footer-section">
+                    <h3>Contacto</h3>
+                    <p><i class="fas fa-envelope"></i> contacto@mired.com</p>
+                    <p><i class="fas fa-phone"></i> +1 234 567 890</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Síguenos</h3>
+                    <p>
+                        <a href="#"><i class="fab fa-facebook"></i> Facebook</a><br>
+                        <a href="#"><i class="fab fa-instagram"></i> Instagram</a><br>
+                        <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
+                    </p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Mi Red. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal Genérico -->
+    <div class="modal" id="genericModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Título</h3>
+                <button class="modal-close" onclick="app.closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Imagen -->
+    <div class="modal" id="imageModal" onclick="app.closeImageModal()">
+        <div class="modal-content" style="max-width: 90%; max-height: 90vh; background: transparent; box-shadow: none;" onclick="event.stopPropagation()">
+            <div class="modal-header" style="background: white; border-radius: 1rem 1rem 0 0;">
+                <button class="modal-close" onclick="app.closeImageModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <img src="" alt="" id="modalImage" style="width: 100%; border-radius: 0 0 1rem 1rem;">
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURACIÓN
+        // ==========================================
+        const CONFIG = {
+            // Firebase Configuration
+            firebase: {
+                apiKey: "AIzaSyBlfv0pZJ4G68rDMaSNG_S2EGOptBVae_E",
+                authDomain: "mi-red-a687d.firebaseapp.com",
+                projectId: "mi-red-a687d",
+                storageBucket: "mi-red-a687d.firebasestorage.app",
+                messagingSenderId: "9017246628",
+                appId: "1:9017246628:web:175a4126dfa4d3e5627731",
+                measurementId: "G-1KK0C750BQ"
+            },
+            
+            // Cloudinary Configuration
+            cloudinary: {
+                cloudName: 'olte8v49',
+                uploadPreset: 'mi-red-preset', // Debes crear este preset en Cloudinary
+                apiKey: '663132117874317' // API Key de Cloudinary
+            },
+            
+            // PayPal Configuration
+            paypal: {
+                clientId: 'BAAYZpBLJ9fbuQUCcu6jVt16M0wI1z_6617fcuSctj-ldj2w_GSKADzzj7SDA444honMPWjAG8eTiliRRc',
+                planPrice: 5.00, // USD
+                planDays: 30
+            },
+            
+            // Admin User IDs (añade aquí los IDs de los administradores)
+            adminIds: [],
+            
+            // App Settings
+            appName: 'Mi Red',
+            defaultLocation: { lat: 19.4326, lng: -99.1332 } // Ciudad de México por defecto
+        };
+
+        // ==========================================
+        // INICIALIZACIÓN DE FIREBASE
+        // ==========================================
+        firebase.initializeApp(CONFIG.firebase);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // ==========================================
+        // APLICACIÓN PRINCIPAL
+        // ==========================================
+        const app = {
+            currentUser: null,
+            currentBusiness: null,
+            userLocation: null,
+            cloudinaryWidget: null,
+            
+            // Inicialización
+            init() {
+                console.log('Iniciando aplicación...');
+                this.setupAuthListener();
+                this.initCloudinaryWidget();
+                this.loadInitialData();
+            },
+            
+            setupAuthListener() {
+                auth.onAuthStateChanged(async (user) => {
+                    this.currentUser = user;
+                    this.updateUI();
+                    
+                    if (user) {
+                        await this.loadUserData();
+                    }
+                });
+            },
+            
+            initCloudinaryWidget() {
+                // El widget se inicializa cuando se necesita
+            },
+            
+            async loadInitialData() {
+                await this.loadFeaturedBusinesses();
+                await this.loadCategories();
+            },
+            
+            // ==========================================
+            // NAVEGACIÓN
+            // ==========================================
+            navigate(page) {
+                // Ocultar todas las páginas
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                
+                // Mostrar página solicitada
+                const targetPage = document.getElementById(`page-${page}`);
+                if (targetPage) {
+                    targetPage.classList.add('active');
+                    window.scrollTo(0, 0);
+                    
+                    // Cargar datos específicos de la página
+                    if (page === 'profile' && this.currentUser) {
+                        this.loadProfile();
+                    } else if (page === 'dashboard' && this.currentUser) {
+                        this.loadDashboard();
+                    } else if (page === 'admin') {
+                        this.loadAdminPanel();
+                    } else if (page === 'businesses') {
+                        this.loadBusinesses();
+                    }
+                }
+                
+                // Cerrar menú móvil
+                document.getElementById('navbarMenu').classList.remove('active');
+            },
+            
+            toggleMenu() {
+                document.getElementById('navbarMenu').classList.toggle('active');
+            },
+            
+            updateUI() {
+                const user = this.currentUser;
+                
+                // Elementos de navegación
+                document.getElementById('navLogin').classList.toggle('hidden', !!user);
+                document.getElementById('navLogout').classList.toggle('hidden', !user);
+                document.getElementById('navProfile').classList.toggle('hidden', !user);
+                document.getElementById('navBusinesses').classList.toggle('hidden', !user);
+                
+                // Verificar si es propietario
+                if (user) {
+                    this.checkIfOwner();
+                }
+            },
+            
+            async checkIfOwner() {
+                if (!this.currentUser) return;
+                
+                const businessSnapshot = await db.collection('businesses')
+                    .where('ownerId', '==', this.currentUser.uid)
+                    .get();
+                
+                const hasBusiness = !businessSnapshot.empty;
+                document.getElementById('navDashboard').classList.toggle('hidden', !hasBusiness);
+            },
+            
+            // ==========================================
+            // AUTENTICACIÓN
+            // ==========================================
+            async handleRegister(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('registerUsername').value.trim();
+                const email = document.getElementById('registerEmail').value.trim();
+                const password = document.getElementById('registerPassword').value;
+                const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+                
+                // Validaciones
+                if (password !== passwordConfirm) {
+                    this.showAlert('registerAlert', 'Las contraseñas no coinciden', 'error');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    this.showAlert('registerAlert', 'La contraseña debe tener al menos 6 caracteres', 'error');
+                    return;
+                }
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+                    
+                    // Crear documento de usuario en Firestore
+                    await db.collection('users').doc(user.uid).set({
+                        uid: user.uid,
+                        username: username,
+                        email: email,
+                        photoURL: '',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        role: 'user',
+                        favorites: [],
+                        reviews: []
+                    });
+                    
+                    this.showAlert('registerAlert', 'Registro exitoso. Redirigiendo...', 'success');
+                    setTimeout(() => this.navigate('home'), 1500);
+                    
+                } catch (error) {
+                    console.error('Error en registro:', error);
+                    this.showAlert('registerAlert', this.getAuthErrorMessage(error), 'error');
+                }
+            },
+            
+            async handleLogin(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    this.showAlert('loginAlert', 'Inicio de sesión exitoso', 'success');
+                    setTimeout(() => this.navigate('home'), 1000);
+                    
+                } catch (error) {
+                    console.error('Error en login:', error);
+                    this.showAlert('loginAlert', this.getAuthErrorMessage(error), 'error');
+                }
+            },
+            
+            async handleRecover(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('recoverEmail').value.trim();
+                
+                try {
+                    await auth.sendPasswordResetEmail(email);
+                    this.showAlert('recoverAlert', 'Se ha enviado un enlace a tu correo', 'success');
+                } catch (error) {
+                    console.error('Error en recuperación:', error);
+                    this.showAlert('recoverAlert', this.getAuthErrorMessage(error), 'error');
+                }
+            },
+            
+            logout() {
+                auth.signOut();
+                this.currentUser = null;
+                this.navigate('home');
+                this.showAlert('home', 'Sesión cerrada', 'success');
+            },
+            
+            getAuthErrorMessage(error) {
+                const messages = {
+                    'auth/email-already-in-use': 'Este correo ya está registrado',
+                    'auth/invalid-email': 'Correo electrónico inválido',
+                    'auth/weak-password': 'Contraseña demasiado débil',
+                    'auth/user-not-found': 'Usuario no encontrado',
+                    'auth/wrong-password': 'Contraseña incorrecta',
+                    'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde'
+                };
+                return messages[error.code] || 'Error de autenticación';
+            },
+            
+            // ==========================================
+            // DATOS DE USUARIO
+            // ==========================================
+            async loadUserData() {
+                if (!this.currentUser) return;
+                
+                try {
+                    const userDoc = await db.collection('users').doc(this.currentUser.uid).get();
+                    
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        this.currentUserData = userData;
+                        
+                        // Verificar si es admin
+                        if (CONFIG.adminIds.includes(this.currentUser.uid) || userData.role === 'admin') {
+                            document.getElementById('navAdmin').classList.remove('hidden');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error cargando datos de usuario:', error);
+                }
+            },
+            
+            async loadProfile() {
+                if (!this.currentUser) return;
+                
+                try {
+                    const userDoc = await db.collection('users').doc(this.currentUser.uid).get();
+                    const userData = userDoc.data();
+                    
+                    document.getElementById('profileName').textContent = userData.username || 'Usuario';
+                    document.getElementById('profileUsername').textContent = `@${userData.username || 'usuario'}`;
+                    document.getElementById('profileUserId').value = this.currentUser.uid;
+                    document.getElementById('profileEmail').value = this.currentUser.email;
+                    
+                    const createdAt = userData.createdAt?.toDate();
+                    document.getElementById('profileCreatedAt').value = createdAt ? 
+                        createdAt.toLocaleDateString('es-ES') : 'N/A';
+                    
+                    // Avatar
+                    const avatar = document.getElementById('profileAvatar');
+                    avatar.src = userData.photoURL || 'https://via.placeholder.com/120/5D4E37/FFFFFF?text=' + (userData.username?.[0] || 'U');
+                    
+                    // Estadísticas
+                    document.getElementById('statFavorites').textContent = userData.favorites?.length || 0;
+                    document.getElementById('statReviews').textContent = userData.reviews?.length || 0;
+                    
+                    // Cargar favoritos
+                    await this.loadUserFavorites();
+                    
+                } catch (error) {
+                    console.error('Error cargando perfil:', error);
+                }
+            },
+            
+            async loadUserFavorites() {
+                if (!this.currentUser) return;
+                
+                try {
+                    const userDoc = await db.collection('users').doc(this.currentUser.uid).get();
+                    const favorites = userDoc.data().favorites || [];
+                    
+                    const container = document.getElementById('profileFavorites');
+                    
+                    if (favorites.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="fas fa-heart"></i></div>
+                                <div class="empty-state-title">Sin favoritos</div>
+                                <p>Aún no has agregado negocios a tus favoritos</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = '';
+                    for (const businessId of favorites) {
+                        const businessDoc = await db.collection('businesses').doc(businessId).get();
+                        if (businessDoc.exists) {
+                            const business = businessDoc.data();
+                            container.innerHTML += this.renderBusinessCard(business, businessId);
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error cargando favoritos:', error);
+                }
+            },
+            
+            showEditProfileModal() {
+                const modalBody = document.getElementById('modalBody');
+                document.getElementById('modalTitle').textContent = 'Editar Perfil';
+                
+                modalBody.innerHTML = `
+                    <form onsubmit="app.saveProfile(event)">
+                        <div class="input-group">
+                            <label>Nombre de usuario</label>
+                            <input type="text" id="editUsername" value="${this.currentUserData?.username || ''}" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Foto de perfil</label>
+                            <button type="button" class="btn btn-secondary" onclick="app.openCloudinaryWidget('profile')">
+                                <i class="fas fa-upload"></i> Subir imagen
+                            </button>
+                            <input type="hidden" id="editPhotoURL" value="${this.currentUserData?.photoURL || ''}">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar cambios
+                        </button>
+                    </form>
+                `;
+                
+                document.getElementById('genericModal').classList.add('active');
+            },
+            
+            async saveProfile(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('editUsername').value.trim();
+                const photoURL = document.getElementById('editPhotoURL').value;
+                
+                try {
+                    await db.collection('users').doc(this.currentUser.uid).update({
+                        username: username,
+                        photoURL: photoURL
+                    });
+                    
+                    this.closeModal();
+                    this.loadProfile();
+                    this.showAlert('profile', 'Perfil actualizado', 'success');
+                    
+                } catch (error) {
+                    console.error('Error guardando perfil:', error);
+                    this.showAlert('profile', 'Error al guardar', 'error');
+                }
+            },
+            
+            // ==========================================
+            // NEGOCIOS - BÚSQUEDA Y LISTADO
+            // ==========================================
+            async loadFeaturedBusinesses() {
+                try {
+                    const snapshot = await db.collection('businesses')
+                        .where('status', '==', 'active')
+                        .orderBy('createdAt', 'desc')
+                        .limit(6)
+                        .get();
+                    
+                    const container = document.getElementById('homeFeatured');
+                    
+                    if (snapshot.empty) {
+                        container.innerHTML = `
+                            <div class="empty-state" style="grid-column: 1/-1;">
+                                <div class="empty-state-icon"><i class="fas fa-store"></i></div>
+                                <div class="empty-state-title">Sin negocios aún</div>
+                                <p>Sé el primero en registrar tu negocio</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const business = doc.data();
+                        container.innerHTML += this.renderBusinessCard(business, doc.id);
+                    });
+                    
+                } catch (error) {
+                    console.error('Error cargando negocios:', error);
+                    document.getElementById('homeFeatured').innerHTML = '<p class="text-error">Error al cargar negocios</p>';
+                }
+            },
+            
+            async loadCategories() {
+                const categories = [
+                    { icon: 'fa-utensils', name: 'Restaurantes', value: 'restaurante' },
+                    { icon: 'fa-shopping-bag', name: 'Tiendas', value: 'tienda' },
+                    { icon: 'fa-tools', name: 'Servicios', value: 'servicio' },
+                    { icon: 'fa-heartbeat', name: 'Salud', value: 'salud' },
+                    { icon: 'fa-film', name: 'Entretenimiento', value: 'entretenimiento' },
+                    { icon: 'fa-ellipsis-h', name: 'Otros', value: 'otros' }
+                ];
+                
+                const container = document.getElementById('homeCategories');
+                container.innerHTML = categories.map(cat => `
+                    <div class="card" style="text-align: center; cursor: pointer;" onclick="app.filterByCategory('${cat.value}')">
+                        <i class="fas ${cat.icon}" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                        <h3 style="color: var(--text);">${cat.name}</h3>
+                    </div>
+                `).join('');
+            },
+            
+            filterByCategory(category) {
+                document.getElementById('filterCategory').value = category;
+                this.navigate('businesses');
+                this.applyFilters();
+            },
+            
+            async loadBusinesses() {
+                await this.applyFilters();
+            },
+            
+            async applyFilters() {
+                const search = document.getElementById('filterSearch').value.toLowerCase();
+                const category = document.getElementById('filterCategory').value;
+                const sortBy = document.getElementById('filterSort').value;
+                
+                let query = db.collection('businesses').where('status', '==', 'active');
+                
+                if (category) {
+                    query = query.where('category', '==', category);
+                }
+                
+                try {
+                    const snapshot = await query.get();
+                    let businesses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    // Filtrar por búsqueda
+                    if (search) {
+                        businesses = businesses.filter(b => 
+                            b.name.toLowerCase().includes(search) ||
+                            b.description?.toLowerCase().includes(search) ||
+                            b.city?.toLowerCase().includes(search)
+                        );
+                    }
+                    
+                    // Ordenar
+                    switch(sortBy) {
+                        case 'rating':
+                            businesses.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                            break;
+                        case 'new':
+                            businesses.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+                            break;
+                        case 'distance':
+                            // Calcular distancia si tenemos ubicación del usuario
+                            if (this.userLocation) {
+                                businesses = businesses.map(b => ({
+                                    ...b,
+                                    distance: this.calculateDistance(
+                                        this.userLocation.lat, 
+                                        this.userLocation.lng,
+                                        b.location?.lat,
+                                        b.location?.lng
+                                    )
+                                })).sort((a, b) => (a.distance || 9999) - (b.distance || 9999));
+                            }
+                            break;
+                    }
+                    
+                    const container = document.getElementById('businessesList');
+                    
+                    if (businesses.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state" style="grid-column: 1/-1;">
+                                <div class="empty-state-icon"><i class="fas fa-search"></i></div>
+                                <div class="empty-state-title">No se encontraron negocios</div>
+                                <p>Intenta con otros filtros</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = businesses.map(b => this.renderBusinessCard(b, b.id)).join('');
+                    
+                } catch (error) {
+                    console.error('Error aplicando filtros:', error);
+                }
+            },
+            
+            renderBusinessCard(business, id) {
+                const image = business.images?.[0] || 'https://via.placeholder.com/400x300/5D4E37/FFFFFF?text=Sin+imagen';
+                const rating = business.rating || 0;
+                const reviews = business.reviewsCount || 0;
+                const category = business.category || 'otros';
+                
+                return `
+                    <div class="business-card" onclick="app.viewBusiness('${id}')">
+                        <img src="${image}" alt="${business.name}" class="business-image">
+                        <div class="business-info">
+                            <h3 class="business-name">${business.name}</h3>
+                            <p class="business-category">${this.capitalizeFirst(category)}</p>
+                            <div class="business-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>${business.city || 'Ubicación no disponible'}</span>
+                            </div>
+                            <div class="business-rating">
+                                <span class="stars">
+                                    ${this.renderStars(rating)}
+                                </span>
+                                <span class="rating-text">(${reviews} reseñas)</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            renderStars(rating) {
+                let stars = '';
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= rating) {
+                        stars += '<i class="fas fa-star"></i>';
+                    } else if (i - 0.5 <= rating) {
+                        stars += '<i class="fas fa-star-half-alt"></i>';
+                    } else {
+                        stars += '<i class="far fa-star"></i>';
+                    }
+                }
+                return stars;
+            },
+            
+            calculateDistance(lat1, lon1, lat2, lon2) {
+                if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+                
+                const R = 6371; // Radio de la Tierra en km
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                         Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            },
+            
+            // ==========================================
+            // DETALLE DE NEGOCIO
+            // ==========================================
+            async viewBusiness(id) {
+                this.navigate('business-detail');
+                
+                try {
+                    const doc = await db.collection('businesses').doc(id).get();
+                    
+                    if (!doc.exists) {
+                        document.getElementById('businessDetailContent').innerHTML = `
+                            <div class="container">
+                                <div class="alert alert-error">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    Negocio no encontrado
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const business = { id, ...doc.data() };
+                    this.currentBusiness = business;
+                    
+                    await this.renderBusinessDetail(business);
+                    
+                } catch (error) {
+                    console.error('Error cargando negocio:', error);
+                    document.getElementById('businessDetailContent').innerHTML = `
+                        <div class="container">
+                            <div class="alert alert-error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Error al cargar el negocio
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            
+            async renderBusinessDetail(business) {
+                const isFavorite = this.currentUser?.uid && business.favorites?.includes(this.currentUser.uid);
+                const isOwner = this.currentUser?.uid === business.ownerId;
+                
+                const container = document.getElementById('businessDetailContent');
+                
+                container.innerHTML = `
+                    <div class="business-detail-header">
+                        <img src="${business.images?.[0] || 'https://via.placeholder.com/800x400'}" 
+                             alt="${business.name}" class="business-detail-image">
+                    </div>
+                    
+                    <div class="container">
+                        <div class="business-detail-content">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                                <div>
+                                    <h1 class="business-detail-title">${business.name}</h1>
+                                    <p style="color: var(--primary); font-weight: 500;">
+                                        ${this.capitalizeFirst(business.category || 'Negocio')}
+                                    </p>
+                                </div>
+                                <button class="btn ${isFavorite ? 'btn-primary' : 'btn-outline'}" 
+                                        onclick="app.toggleFavorite('${business.id}')"
+                                        style="width: auto; padding: 0.75rem 1rem;">
+                                    <i class="${isFavorite ? 'fas' : 'far'} fa-heart"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="business-rating" style="margin-bottom: 2rem;">
+                                <span class="stars" style="font-size: 1.25rem;">
+                                    ${this.renderStars(business.rating || 0)}
+                                </span>
+                                <span style="margin-left: 0.5rem; font-weight: 600;">
+                                    ${business.rating?.toFixed(1) || '0'}
+                                </span>
+                                <span style="margin-left: 0.5rem; color: var(--text-light);">
+                                    (${business.reviewsCount || 0} reseñas)
+                                </span>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                ${business.phone ? `
+                                    <a href="tel:${business.phone}" class="action-btn action-btn-primary">
+                                        <i class="fas fa-phone"></i> Llamar
+                                    </a>
+                                ` : ''}
+                                ${business.whatsapp ? `
+                                    <a href="https://wa.me/${business.whatsapp}" target="_blank" 
+                                       class="action-btn action-btn-secondary" style="background: #25D366; color: white;">
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    </a>
+                                ` : ''}
+                                <button class="action-btn action-btn-secondary" onclick="app.shareBusiness('${business.id}')">
+                                    <i class="fas fa-share-alt"></i> Compartir
+                                </button>
+                                <button class="action-btn action-btn-secondary" onclick="app.showDirections('${business.id}')">
+                                    <i class="fas fa-directions"></i> Dirección
+                                </button>
+                            </div>
+                            
+                            <div class="business-detail-section">
+                                <h3><i class="fas fa-info-circle"></i> Descripción</h3>
+                                <p>${business.description || 'Sin descripción'}</p>
+                            </div>
+                            
+                            ${business.services?.length > 0 ? `
+                                <div class="business-detail-section">
+                                    <h3><i class="fas fa-list"></i> Servicios</h3>
+                                    <ul style="list-style: none; padding: 0;">
+                                        ${business.services.map(s => `
+                                            <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                                                <i class="fas fa-check" style="color: var(--success); margin-right: 0.5rem;"></i>
+                                                ${s.name} - ${s.price || 'Consultar'}
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                            
+                            ${business.gallery?.length > 0 ? `
+                                <div class="business-detail-section">
+                                    <h3><i class="fas fa-images"></i> Galería</h3>
+                                    <div class="gallery">
+                                        ${business.gallery.map(img => `
+                                            <div class="gallery-item" onclick="app.showImage('${img}')">
+                                                <img src="${img}" alt="Galería">
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="business-detail-section">
+                                <h3><i class="fas fa-clock"></i> Horario</h3>
+                                <p>${business.hours || 'Horario no disponible'}</p>
+                            </div>
+                            
+                            <div class="business-detail-section">
+                                <h3><i class="fas fa-map-marker-alt"></i> Ubicación</h3>
+                                <p>${business.address || 'Dirección no disponible'}</p>
+                                <p style="color: var(--text-light);">${business.city}, ${business.country || ''}</p>
+                            </div>
+                            
+                            ${business.website || business.socialMedia ? `
+                                <div class="business-detail-section">
+                                    <h3><i class="fas fa-link"></i> Enlaces</h3>
+                                    ${business.website ? `
+                                        <p><a href="${business.website}" target="_blank" style="color: var(--primary);">
+                                            <i class="fas fa-globe"></i> Sitio web
+                                        </a></p>
+                                    ` : ''}
+                                    ${business.socialMedia ? `
+                                        <div style="margin-top: 0.5rem;">
+                                            ${business.socialMedia.facebook ? `
+                                                <a href="${business.socialMedia.facebook}" target="_blank" 
+                                                   style="margin-right: 1rem; color: var(--primary);">
+                                                    <i class="fab fa-facebook"></i> Facebook
+                                                </a>
+                                            ` : ''}
+                                            ${business.socialMedia.instagram ? `
+                                                <a href="${business.socialMedia.instagram}" target="_blank"
+                                                   style="margin-right: 1rem; color: var(--primary);">
+                                                    <i class="fab fa-instagram"></i> Instagram
+                                                </a>
+                                            ` : ''}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                            
+                            ${isOwner ? `
+                                <div class="card mt-3" style="background: var(--bg);">
+                                    <h3 style="color: var(--primary); margin-bottom: 1rem;">
+                                        <i class="fas fa-cog"></i> Panel de propietario
+                                    </h3>
+                                    <button class="btn btn-primary" onclick="app.editBusiness('${business.id}')">
+                                        <i class="fas fa-edit"></i> Editar negocio
+                                    </button>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="business-detail-section">
+                                <h3><i class="fas fa-comments"></i> Reseñas</h3>
+                                ${this.currentUser ? `
+                                    <button class="btn btn-primary mb-2" onclick="app.showReviewForm('${business.id}')">
+                                        <i class="fas fa-star"></i> Escribir reseña
+                                    </button>
+                                ` : `
+                                    <p style="color: var(--text-light); margin-bottom: 1rem;">
+                                        Inicia sesión para dejar una reseña
+                                    </p>
+                                `}
+                                <div id="businessReviews">
+                                    ${await this.loadBusinessReviews(business.id)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            async loadBusinessReviews(businessId) {
+                try {
+                    const snapshot = await db.collection('reviews')
+                        .where('businessId', '==', businessId)
+                        .orderBy('createdAt', 'desc')
+                        .limit(10)
+                        .get();
+                    
+                    if (snapshot.empty) {
+                        return `
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="fas fa-comment"></i></div>
+                                <div class="empty-state-title">Sin reseñas aún</div>
+                                <p>Sé el primero en opinar</p>
+                            </div>
+                        `;
+                    }
+                    
+                    let html = '';
+                    for (const doc of snapshot.docs) {
+                        const review = doc.data();
+                        const userDoc = await db.collection('users').doc(review.userId).get();
+                        const userData = userDoc.data();
+                        
+                        html += `
+                            <div class="review-card">
+                                <div class="review-header">
+                                    <img src="${userData?.photoURL || 'https://via.placeholder.com/48'}" 
+                                         alt="${userData?.username}" class="review-avatar">
+                                    <div>
+                                        <div class="review-author">${userData?.username || 'Usuario'}</div>
+                                        <div class="review-date">${review.createdAt?.toDate().toLocaleDateString('es-ES')}</div>
+                                    </div>
+                                </div>
+                                <div class="stars mb-1">${this.renderStars(review.rating)}</div>
+                                <p class="review-text">${review.comment}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    return html;
+                    
+                } catch (error) {
+                    console.error('Error cargando reseñas:', error);
+                    return '<p class="text-error">Error al cargar reseñas</p>';
+                }
+            },
+            
+            async toggleFavorite(businessId) {
+                if (!this.currentUser) {
+                    this.navigate('login');
+                    return;
+                }
+                
+                try {
+                    const userRef = db.collection('users').doc(this.currentUser.uid);
+                    const businessRef = db.collection('businesses').doc(businessId);
+                    
+                    await db.runTransaction(async (transaction) => {
+                        const userDoc = await transaction.get(userRef);
+                        const businessDoc = await transaction.get(businessRef);
+                        
+                        let favorites = userDoc.data().favorites || [];
+                        const isFavorite = favorites.includes(businessId);
+                        
+                        if (isFavorite) {
+                            favorites = favorites.filter(id => id !== businessId);
+                        } else {
+                            favorites.push(businessId);
+                        }
+                        
+                        transaction.update(userRef, { favorites });
+                        
+                        // Actualizar contador en negocio
+                        const currentFavorites = businessDoc.data().favoritesCount || 0;
+                        transaction.update(businessRef, {
+                            favoritesCount: isFavorite ? currentFavorites - 1 : currentFavorites + 1
+                        });
+                    });
+                    
+                    this.viewBusiness(businessId); // Recargar vista
+                    
+                } catch (error) {
+                    console.error('Error toggling favorite:', error);
+                }
+            },
+            
+            shareBusiness(businessId) {
+                const url = `${window.location.origin}/?business=${businessId}`;
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: this.currentBusiness?.name,
+                        text: this.currentBusiness?.description,
+                        url: url
+                    });
+                } else {
+                    navigator.clipboard.writeText(url);
+                    alert('Enlace copiado al portapapeles');
+                }
+            },
+            
+            showDirections(businessId) {
+                const business = this.currentBusiness;
+                if (!business?.location) {
+                    alert('Ubicación no disponible');
+                    return;
+                }
+                
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${business.location.lat},${business.location.lng}`;
+                window.open(url, '_blank');
+            },
+            
+            showImage(url) {
+                document.getElementById('modalImage').src = url;
+                document.getElementById('imageModal').classList.add('active');
+            },
+            
+            closeImageModal() {
+                document.getElementById('imageModal').classList.remove('active');
+            },
+            
+            // ==========================================
+            // RESEÑAS
+            // ==========================================
+            showReviewForm(businessId) {
+                const modalBody = document.getElementById('modalBody');
+                document.getElementById('modalTitle').textContent = 'Escribir Reseña';
+                
+                modalBody.innerHTML = `
+                    <form onsubmit="app.submitReview(event, '${businessId}')">
+                        <div class="input-group">
+                            <label>Calificación</label>
+                            <div style="display: flex; gap: 0.5rem; font-size: 2rem;">
+                                ${[1,2,3,4,5].map(i => `
+                                    <i class="far fa-star" id="star${i}" style="cursor: pointer; color: var(--border);"
+                                       onmouseover="app.hoverStars(${i})" onmouseout="app.resetStars()"
+                                       onclick="app.selectStars(${i})"></i>
+                                `).join('')}
+                            </div>
+                            <input type="hidden" id="reviewRating" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Comentario</label>
+                            <textarea id="reviewComment" rows="4" required 
+                                      placeholder="Cuéntanos tu experiencia..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Publicar reseña
+                        </button>
+                    </form>
+                `;
+                
+                document.getElementById('genericModal').classList.add('active');
+            },
+            
+            hoverStars(count) {
+                for (let i = 1; i <= 5; i++) {
+                    const star = document.getElementById(`star${i}`);
+                    star.className = i <= count ? 'fas fa-star' : 'far fa-star';
+                    star.style.color = i <= count ? 'var(--accent)' : 'var(--border)';
+                }
+            },
+            
+            resetStars() {
+                const selected = document.getElementById('reviewRating').value;
+                if (selected) {
+                    this.hoverStars(parseInt(selected));
+                } else {
+                    for (let i = 1; i <= 5; i++) {
+                        const star = document.getElementById(`star${i}`);
+                        star.className = 'far fa-star';
+                        star.style.color = 'var(--border)';
+                    }
+                }
+            },
+            
+            selectStars(count) {
+                document.getElementById('reviewRating').value = count;
+                this.hoverStars(count);
+            },
+            
+            async submitReview(e, businessId) {
+                e.preventDefault();
+                
+                const rating = parseInt(document.getElementById('reviewRating').value);
+                const comment = document.getElementById('reviewComment').value.trim();
+                
+                if (!rating) {
+                    alert('Selecciona una calificación');
+                    return;
+                }
+                
+                try {
+                    // Verificar si ya escribió reseña
+                    const existingReview = await db.collection('reviews')
+                        .where('businessId', '==', businessId)
+                        .where('userId', '==', this.currentUser.uid)
+                        .get();
+                    
+                    if (!existingReview.empty) {
+                        alert('Ya has dejado una reseña para este negocio');
+                        return;
+                    }
+                    
+                    await db.collection('reviews').add({
+                        businessId,
+                        userId: this.currentUser.uid,
+                        rating,
+                        comment,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Actualizar calificación del negocio
+                    await this.updateBusinessRating(businessId);
+                    
+                    this.closeModal();
+                    this.viewBusiness(businessId);
+                    this.showAlert('business-detail', 'Reseña publicada', 'success');
+                    
+                } catch (error) {
+                    console.error('Error publicando reseña:', error);
+                    alert('Error al publicar reseña');
+                }
+            },
+            
+            async updateBusinessRating(businessId) {
+                const reviews = await db.collection('reviews')
+                    .where('businessId', '==', businessId)
+                    .get();
+                
+                let total = 0;
+                reviews.forEach(doc => total += doc.data().rating);
+                
+                const avg = reviews.size > 0 ? total / reviews.size : 0;
+                
+                await db.collection('businesses').doc(businessId).update({
+                    rating: avg,
+                    reviewsCount: reviews.size
+                });
+            },
+            
+            // ==========================================
+            // DASHBOARD - PROPIETARIO
+            // ==========================================
+            async loadDashboard() {
+                if (!this.currentUser) return;
+                
+                try {
+                    // Cargar negocios del usuario
+                    const businessesSnapshot = await db.collection('businesses')
+                        .where('ownerId', '==', this.currentUser.uid)
+                        .get();
+                    
+                    const businesses = businessesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    if (businesses.length === 0) {
+                        document.getElementById('dashboardBusinessList').innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="fas fa-store"></i></div>
+                                <div class="empty-state-title">Sin negocios</div>
+                                <p>Registra tu primer negocio</p>
+                                <button class="btn btn-primary mt-2" onclick="app.showBusinessForm()">
+                                    <i class="fas fa-plus"></i> Crear negocio
+                                </button>
+                            </div>
+                        `;
+                        document.getElementById('btnCreateBusiness').style.display = 'inline-flex';
+                    } else {
+                        const business = businesses[0]; // Tomamos el primero
+                        document.getElementById('dashboardBusinessList').innerHTML = `
+                            <div class="card">
+                                <h3>${business.name}</h3>
+                                <p class="text-light">${business.category}</p>
+                                <span class="status-badge ${business.status === 'active' ? 'status-active' : 'status-inactive'}">
+                                    ${business.status === 'active' ? 'Activo' : 'Inactivo'}
+                                </span>
+                                <div class="mt-2">
+                                    <button class="btn btn-primary" onclick="app.editBusiness('${business.id}')">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Actualizar estadísticas
+                        document.getElementById('statViews').textContent = business.views || 0;
+                        document.getElementById('statRating').textContent = (business.rating || 0).toFixed(1);
+                        document.getElementById('statReviewsCount').textContent = business.reviewsCount || 0;
+                        document.getElementById('statFavoritesCount').textContent = business.favoritesCount || 0;
+                        
+                        // Verificar plan
+                        this.checkPlanStatus(business);
+                        
+                        // Cargar publicaciones
+                        await this.loadDashboardPosts(business.id);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error cargando dashboard:', error);
+                }
+            },
+            
+            checkPlanStatus(business) {
+                const plan = business.plan;
+                const statusEl = document.getElementById('planStatus');
+                const infoEl = document.getElementById('planInfo');
+                const expiryEl = document.getElementById('planExpiry');
+                const renewBtn = document.getElementById('btnRenew');
+                
+                if (!plan || !plan.isActive) {
+                    statusEl.className = 'status-badge status-inactive';
+                    statusEl.textContent = 'Inactivo';
+                    infoEl.innerHTML = 'No tienes un plan activo';
+                    expiryEl.textContent = '-';
+                    renewBtn.style.display = 'inline-flex';
+                } else {
+                    const expiryDate = plan.expiryDate?.toDate();
+                    const isExpired = expiryDate < new Date();
+                    
+                    if (isExpired) {
+                        statusEl.className = 'status-badge status-pending';
+                        statusEl.textContent = 'Vencido';
+                        infoEl.innerHTML = `Tu plan venció el <strong>${expiryDate.toLocaleDateString('es-ES')}</strong>`;
+                        renewBtn.style.display = 'inline-flex';
+                    } else {
+                        statusEl.className = 'status-badge status-active';
+                        statusEl.textContent = 'Activo';
+                        infoEl.innerHTML = `Tu plan está activo hasta el <strong>${expiryDate.toLocaleDateString('es-ES')}</strong>`;
+                        renewBtn.style.display = 'none';
+                    }
+                    
+                    expiryEl.textContent = expiryDate.toLocaleDateString('es-ES');
+                }
+            },
+            
+            async loadDashboardPosts(businessId) {
+                try {
+                    const posts = await db.collection('posts')
+                        .where('businessId', '==', businessId)
+                        .orderBy('createdAt', 'desc')
+                        .limit(5)
+                        .get();
+                    
+                    const container = document.getElementById('dashboardPostsList');
+                    
+                    if (posts.empty) {
+                        container.innerHTML = '<p style="color: var(--text-light);">Sin publicaciones</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = posts.docs.map(doc => {
+                        const post = doc.data();
+                        return `
+                            <div class="card" style="margin-bottom: 0.5rem;">
+                                <p>${post.text}</p>
+                                <small style="color: var(--text-light);">
+                                    ${post.createdAt?.toDate().toLocaleDateString('es-ES')}
+                                </small>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                } catch (error) {
+                    console.error('Error cargando publicaciones:', error);
+                }
+            },
+            
+            showBusinessForm(businessId = null) {
+                const isEdit = !!businessId;
+                const business = this.currentBusiness || {};
+                
+                const modalBody = document.getElementById('modalBody');
+                document.getElementById('modalTitle').textContent = isEdit ? 'Editar Negocio' : 'Crear Negocio';
+                
+                modalBody.innerHTML = `
+                    <form onsubmit="app.saveBusiness(event, '${businessId || ''}')">
+                        <div class="form-section">
+                            <h3 class="form-section-title">Información Básica</h3>
+                            
+                            <div class="input-group">
+                                <label>Nombre del negocio *</label>
+                                <input type="text" id="bizName" value="${business.name || ''}" required>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label>Categoría *</label>
+                                    <select id="bizCategory" required>
+                                        <option value="">Seleccionar</option>
+                                        <option value="restaurante" ${business.category === 'restaurante' ? 'selected' : ''}>Restaurante</option>
+                                        <option value="tienda" ${business.category === 'tienda' ? 'selected' : ''}>Tienda</option>
+                                        <option value="servicio" ${business.category === 'servicio' ? 'selected' : ''}>Servicio</option>
+                                        <option value="salud" ${business.category === 'salud' ? 'selected' : ''}>Salud</option>
+                                        <option value="entretenimiento" ${business.category === 'entretenimiento' ? 'selected' : ''}>Entretenimiento</option>
+                                        <option value="otros" ${business.category === 'otros' ? 'selected' : ''}>Otros</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label>Subcategoría</label>
+                                    <input type="text" id="bizSubcategory" value="${business.subcategory || ''}">
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>Descripción *</label>
+                                <textarea id="bizDescription" rows="3" required>${business.description || ''}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="form-section-title">Ubicación</h3>
+                            
+                            <div class="input-group">
+                                <label>Dirección *</label>
+                                <input type="text" id="bizAddress" value="${business.address || ''}" required>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label>Ciudad *</label>
+                                    <input type="text" id="bizCity" value="${business.city || ''}" required>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label>País</label>
+                                    <input type="text" id="bizCountry" value="${business.country || ''}">
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-secondary" onclick="app.getCurrentLocation()">
+                                <i class="fas fa-location-crosshairs"></i> Usar ubicación actual
+                            </button>
+                            <input type="hidden" id="bizLat" value="${business.location?.lat || ''}">
+                            <input type="hidden" id="bizLng" value="${business.location?.lng || ''}">
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="form-section-title">Contacto</h3>
+                            
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label>Teléfono</label>
+                                    <input type="tel" id="bizPhone" value="${business.phone || ''}">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label>WhatsApp</label>
+                                    <input type="tel" id="bizWhatsapp" value="${business.whatsapp || ''}">
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>Sitio web</label>
+                                <input type="url" id="bizWebsite" value="${business.website || ''}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="form-section-title">Imágenes</h3>
+                            
+                            <div class="input-group">
+                                <label>Foto principal</label>
+                                <button type="button" class="btn btn-secondary" onclick="app.openCloudinaryWidget('main')">
+                                    <i class="fas fa-upload"></i> Subir imagen
+                                </button>
+                                <input type="hidden" id="bizMainImage" value="${business.images?.[0] || ''}">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>Galería</label>
+                                <button type="button" class="btn btn-secondary" onclick="app.openCloudinaryWidget('gallery')">
+                                    <i class="fas fa-upload"></i> Subir imágenes
+                                </button>
+                                <input type="hidden" id="bizGallery" value='${JSON.stringify(business.gallery || [])}'>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="form-section-title">Horario</h3>
+                            <div class="input-group">
+                                <label>Horario de atención</label>
+                                <input type="text" id="bizHours" value="${business.hours || ''}" 
+                                       placeholder="Ej: Lun-Vie 9:00-18:00">
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> ${isEdit ? 'Actualizar' : 'Crear'} negocio
+                        </button>
+                    </form>
+                `;
+                
+                document.getElementById('genericModal').classList.add('active');
+            },
+            
+            async getCurrentLocation() {
+                if (!navigator.geolocation) {
+                    alert('Geolocalización no soportada');
+                    return;
+                }
+                
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                    });
+                    
+                    document.getElementById('bizLat').value = position.coords.latitude;
+                    document.getElementById('bizLng').value = position.coords.longitude;
+                    
+                    alert(`Ubicación guardada: ${position.coords.latitude}, ${position.coords.longitude}`);
+                    
+                } catch (error) {
+                    console.error('Error obteniendo ubicación:', error);
+                    alert('No se pudo obtener la ubicación');
+                }
+            },
+            
+            async saveBusiness(e, businessId) {
+                e.preventDefault();
+                
+                const businessData = {
+                    name: document.getElementById('bizName').value.trim(),
+                    category: document.getElementById('bizCategory').value,
+                    subcategory: document.getElementById('bizSubcategory').value.trim(),
+                    description: document.getElementById('bizDescription').value.trim(),
+                    address: document.getElementById('bizAddress').value.trim(),
+                    city: document.getElementById('bizCity').value.trim(),
+                    country: document.getElementById('bizCountry').value.trim(),
+                    phone: document.getElementById('bizPhone').value.trim(),
+                    whatsapp: document.getElementById('bizWhatsapp').value.trim(),
+                    website: document.getElementById('bizWebsite').value.trim(),
+                    hours: document.getElementById('bizHours').value.trim(),
+                    images: [document.getElementById('bizMainImage').value],
+                    gallery: JSON.parse(document.getElementById('bizGallery').value || '[]'),
+                    location: {
+                        lat: parseFloat(document.getElementById('bizLat').value) || 0,
+                        lng: parseFloat(document.getElementById('bizLng').value) || 0
+                    },
+                    ownerId: this.currentUser.uid,
+                    status: 'active',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                try {
+                    if (businessId) {
+                        await db.collection('businesses').doc(businessId).update(businessData);
+                        this.showAlert('dashboard', 'Negocio actualizado', 'success');
+                    } else {
+                        businessData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                        businessData.rating = 0;
+                        businessData.reviewsCount = 0;
+                        businessData.favoritesCount = 0;
+                        businessData.views = 0;
+                        
+                        const docRef = await db.collection('businesses').add(businessData);
+                        this.showAlert('dashboard', 'Negocio creado exitosamente', 'success');
+                    }
+                    
+                    this.closeModal();
+                    this.loadDashboard();
+                    
+                } catch (error) {
+                    console.error('Error guardando negocio:', error);
+                    alert('Error al guardar el negocio');
+                }
+            },
+            
+            async editBusiness(businessId) {
+                const doc = await db.collection('businesses').doc(businessId).get();
+                this.currentBusiness = { id: doc.id, ...doc.data() };
+                this.showBusinessForm(businessId);
+            },
+            
+            // ==========================================
+            // CLOUDINARY UPLOAD
+            // ==========================================
+            openCloudinaryWidget(type) {
+                const widget = cloudinary.createUploadWidget({
+                    cloudName: CONFIG.cloudinary.cloudName,
+                    uploadPreset: CONFIG.cloudinary.uploadPreset,
+                    sources: ['local', 'url', 'camera'],
+                    maxFileSize: 10000000, // 10MB
+                    multiple: type === 'gallery',
+                    max: type === 'gallery' ? 10 : 1,
+                    clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov'],
+                    cropping: true,
+                    croppingAspectRatio: type === 'profile' ? 1 : null,
+                    croppingShowDimensions: true
+                }, (error, result) => {
+                    if (!error && result && result.event === "success") {
+                        console.log('Done! Here is the image info: ', result.info);
+                        
+                        if (type === 'profile') {
+                            document.getElementById('editPhotoURL').value = result.info.secure_url;
+                        } else if (type === 'main') {
+                            document.getElementById('bizMainImage').value = result.info.secure_url;
+                        } else if (type === 'gallery') {
+                            const currentGallery = JSON.parse(document.getElementById('bizGallery').value || '[]');
+                            currentGallery.push(result.info.secure_url);
+                            document.getElementById('bizGallery').value = JSON.stringify(currentGallery);
+                        }
+                        
+                        this.showAlert('modalBody', 'Imagen subida exitosamente', 'success');
+                    }
+                });
+                
+                widget.open();
+            },
+            
+            // ==========================================
+            // PUBLICACIONES
+            // ==========================================
+            showPostForm() {
+                const modalBody = document.getElementById('modalBody');
+                document.getElementById('modalTitle').textContent = 'Nueva Publicación';
+                
+                modalBody.innerHTML = `
+                    <form onsubmit="app.createPost(event)">
+                        <div class="input-group">
+                            <label>Texto</label>
+                            <textarea id="postText" rows="3" required 
+                                      placeholder="¿Qué quieres compartir?"></textarea>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Imagen (opcional)</label>
+                            <button type="button" class="btn btn-secondary" onclick="app.openCloudinaryWidget('post')">
+                                <i class="fas fa-upload"></i> Subir imagen
+                            </button>
+                            <input type="hidden" id="postImage" value="">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Publicar
+                        </button>
+                    </form>
+                `;
+                
+                document.getElementById('genericModal').classList.add('active');
+            },
+            
+            async createPost(e) {
+                e.preventDefault();
+                
+                const businesses = await db.collection('businesses')
+                    .where('ownerId', '==', this.currentUser.uid)
+                    .get();
+                
+                if (businesses.empty) {
+                    alert('No tienes un negocio registrado');
+                    return;
+                }
+                
+                const businessId = businesses.docs[0].id;
+                
+                try {
+                    await db.collection('posts').add({
+                        businessId,
+                        text: document.getElementById('postText').value.trim(),
+                        image: document.getElementById('postImage').value,
+                        likes: [],
+                        comments: [],
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    this.closeModal();
+                    this.loadDashboard();
+                    this.showAlert('dashboard', 'Publicación creada', 'success');
+                    
+                } catch (error) {
+                    console.error('Error creando publicación:', error);
+                    alert('Error al crear publicación');
+                }
+            },
+            
+            // ==========================================
+            // PAGOS - PAYPAL
+            // ==========================================
+            showPaymentModal() {
+                const modalBody = document.getElementById('modalBody');
+                document.getElementById('modalTitle').textContent = 'Renovar Plan';
+                
+                modalBody.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--primary);">Plan Premium</h3>
+                        <p style="font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">
+                            $${CONFIG.paypal.planPrice} USD
+                        </p>
+                        <p style="color: var(--text-light); margin-bottom: 2rem;">
+                            ${CONFIG.paypal.planDays} días de visibilidad premium
+                        </p>
+                        
+                        <div id="paypal-button-container"></div>
+                        
+                        <div class="mt-3" style="text-align: left; font-size: 0.875rem; color: var(--text-light);">
+                            <p><strong>Beneficios:</strong></p>
+                            <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                <li>Mayor visibilidad en búsquedas</li>
+                                <li>Estadísticas detalladas</li>
+                                <li>Publicaciones ilimitadas</li>
+                                <li>Soporte prioritario</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('genericModal').classList.add('active');
+                
+                // Renderizar botón de PayPal
+                this.renderPayPalButton();
+            },
+            
+            renderPayPalButton() {
+                // NOTA IMPORTANTE: En producción, la creación y captura de órdenes debe hacerse
+                // desde un backend seguro para proteger el Client Secret y validar los pagos.
+                // Esta implementación client-side es para demostración.
+                
+                paypal.Buttons({
+                    createOrder: (data, actions) => {
+                        return actions.order.create({
+                            purchase_units: [{
+                                description: 'Plan Premium - 30 días',
+                                amount: {
+                                    value: CONFIG.paypal.planPrice.toFixed(2)
+                                }
+                            }]
+                        });
+                    },
+                    
+                    onApprove: async (data, actions) => {
+                        try {
+                            const details = await actions.order.capture();
+                            await this.processPayment(details);
+                        } catch (error) {
+                            console.error('Error en PayPal:', error);
+                            alert('Error al procesar el pago');
+                        }
+                    },
+                    
+                    onError: (err) => {
+                        console.error('Error en PayPal:', err);
+                        alert('Error en el proceso de pago');
+                    }
+                    
+                }).render('#paypal-button-container');
+            },
+            
+            async processPayment(paymentDetails) {
+                const businesses = await db.collection('businesses')
+                    .where('ownerId', '==', this.currentUser.uid)
+                    .get();
+                
+                if (businesses.empty) {
+                    alert('No se encontró tu negocio');
+                    return;
+                }
+                
+                const businessId = businesses.docs[0].id;
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + CONFIG.paypal.planDays);
+                
+                try {
+                    await db.collection('businesses').doc(businessId).update({
+                        plan: {
+                            isActive: true,
+                            startDate: firebase.firestore.FieldValue.serverTimestamp(),
+                            expiryDate: firebase.firestore.Timestamp.fromDate(expiryDate),
+                            transactionId: paymentDetails.id,
+                            amount: CONFIG.paypal.planPrice,
+                            status: 'completed'
+                        },
+                        status: 'active'
+                    });
+                    
+                    this.closeModal();
+                    this.loadDashboard();
+                    this.showAlert('dashboard', '¡Pago exitoso! Tu plan está activo', 'success');
+                    
+                } catch (error) {
+                    console.error('Error procesando pago:', error);
+                    alert('Error al activar el plan');
+                }
+            },
+            
+            // ==========================================
+            // PANEL DE ADMINISTRACIÓN
+            // ==========================================
+            async loadAdminPanel() {
+                // Verificar si es admin
+                if (!this.currentUser) {
+                    this.navigate('login');
+                    return;
+                }
+                
+                const userDoc = await db.collection('users').doc(this.currentUser.uid).get();
+                const userData = userDoc.data();
+                
+                const isAdmin = CONFIG.adminIds.includes(this.currentUser.uid) || userData?.role === 'admin';
+                
+                if (!isAdmin) {
+                    alert('Acceso denegado');
+                    this.navigate('home');
+                    return;
+                }
+                
+                // Cargar usuarios
+                const usersSnapshot = await db.collection('users').limit(20).get();
+                const usersContainer = document.getElementById('adminUsersList');
+                
+                usersContainer.innerHTML = usersSnapshot.docs.map(doc => {
+                    const user = doc.data();
+                    return `
+                        <div class="card" style="padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>${user.username}</strong><br>
+                                    <small>${user.email}</small>
+                                </div>
+                                <span class="badge">${user.role || 'user'}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Cargar negocios
+                const businessesSnapshot = await db.collection('businesses').limit(20).get();
+                const businessesContainer = document.getElementById('adminBusinessesList');
+                
+                businessesContainer.innerHTML = businessesSnapshot.docs.map(doc => {
+                    const business = doc.data();
+                    return `
+                        <div class="card" style="padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>${business.name}</strong><br>
+                                    <small>${business.city}</small>
+                                </div>
+                                <span class="badge ${business.status === 'active' ? 'badge-success' : 'badge-warning'}">
+                                    ${business.status}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Cargar reportes
+                const reportsSnapshot = await db.collection('reports').limit(20).get();
+                const reportsContainer = document.getElementById('adminReportsList');
+                
+                if (reportsSnapshot.empty) {
+                    reportsContainer.innerHTML = '<p style="color: var(--text-light);">Sin reportes</p>';
+                } else {
+                    reportsContainer.innerHTML = reportsSnapshot.docs.map(doc => {
+                        const report = doc.data();
+                        return `
+                            <div class="card" style="padding: 1rem;">
+                                <p><strong>Tipo:</strong> ${report.type}</p>
+                                <p><small>${report.description}</small></p>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            },
+            
+            // ==========================================
+            // UTILIDADES
+            // ==========================================
+            showAlert(containerId, message, type) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                
+                container.innerHTML = `
+                    <div class="alert alert-${type}">
+                        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                        ${message}
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    container.innerHTML = '';
+                }, 5000);
+            },
+            
+            closeModal() {
+                document.getElementById('genericModal').classList.remove('active');
+            },
+            
+            capitalizeFirst(str) {
+                if (!str) return '';
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            },
+            
+            searchFromHome() {
+                const query = document.getElementById('homeSearchInput').value;
+                if (query.trim()) {
+                    document.getElementById('filterSearch').value = query;
+                    this.navigate('businesses');
+                    this.applyFilters();
+                }
+            }
+        };
+
+        // Iniciar aplicación cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+
+        // Service Worker para PWA (opcional)
+        if ('serviceWorker' in navigator) {
+            // Se puede agregar un service worker aquí para funcionalidad offline
+        }
+    </script>
+</body>
+  </html>
